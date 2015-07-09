@@ -1,4 +1,4 @@
-# The inconvenience of C-code interfaces, for people who appreciate C++
+# The problem: Inconveniences of C-code interfaces
 
 Some C interfaces look like this:
 
