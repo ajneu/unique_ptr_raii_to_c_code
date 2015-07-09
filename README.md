@@ -29,7 +29,7 @@ The thing about *this* C interface... is that you cannot use the typical `std::u
 The reason is that the allocated storage is not returned from a function-call  
 ```
 // if it were returned from a function-call, it would be nice: 
-std::unique_ptr<mytype, decltype(Deleter_mytype())> x2(static_cast<mytype *>(bla_init()));
+std::unique_ptr<mytype, decltype(Deleter_Mytype())> x2(static_cast<mytype *>(bla_init()), Deleter_Mytype());
 ```
 ... but instead returned with the argument-parameter,
 as an lvalue with applied address-of operator (e.g. `&x`).
