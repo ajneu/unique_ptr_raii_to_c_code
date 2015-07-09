@@ -2,7 +2,7 @@
 
 Some C interfaces look like this:
 
-```
+```c
 mytype *x;
 bla_init(&x); // allocate storage on the heap and set the address of that allocated storage as the value of pointer x
 bla_free(x);  // use the value of pointer x, to locate the storage that is now freed
@@ -14,7 +14,7 @@ The problem: you must always remember to call `bla_free(x);`
 
 # A possible solution
 
-```
+```cpp
 {
   // RAII-approach
   Unique_ptr_Mytype x2;
@@ -27,7 +27,7 @@ The problem: you must always remember to call `bla_free(x);`
 ```
 The thing about *this* C interface... is that you cannot use the typical `std::unique_ptr` in a convenient manner.
 The reason is that the allocated storage is not returned from a function-call  
-```
+```cpp
 // if it were returned from a function-call, it would be nice: 
 std::unique_ptr<mytype, decltype(Deleter_Mytype())> x2(static_cast<mytype *>(bla_init()), Deleter_Mytype());
 ```
