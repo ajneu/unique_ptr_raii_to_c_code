@@ -1,23 +1,49 @@
 #include <iostream>
 #include <memory>
 
+
 #include "mytype.h"   // old C-interface
 
 
-struct Deleter_Mytype {
-  void operator()(Mytype *p) {
+
+#define PLAIN_FUNC_PTR
+
+#ifndef PLAIN_FUNC_PTR
+// std::function
+#include <functional>
+#define STDFUNC(TRet, TArg) std::function<TRet (TArg)>
+#else
+// plain function pointers
+#define STDFUNC(TRet, TArg) TRet(*)(TArg)
+#endif
+
+
+
+
+template <typename TRet, typename TArg>
+class Deleter {
+  using Func = STDFUNC(TRet, TArg *);
+public:
+  Deleter() {}
+  Deleter(const Func& f) : free_func{f} {}
+  void operator()(TArg *p) {
     std::cout << "deleter for Mytype..." << std::endl;
-    free_Mytype(p);
+    free_func(p);
   }
+private:
+  const Func free_func;
 };
 
-class Unique_ptr_Mytype : protected std::unique_ptr<Mytype, decltype(Deleter_Mytype())> {
+template <typename TRet, typename TArg>
+class Unique_ptr_Mytype : protected std::unique_ptr<TArg, decltype(Deleter<TRet, TArg>())> {
 private:
-  Mytype *ptr;
-  using BaseUniquePtr = std::unique_ptr<Mytype, decltype(Deleter_Mytype())>;
+  TArg *ptr;
+  using Deleter1 = Deleter<TRet, TArg>;
+  using BaseUniquePtr = std::unique_ptr<TArg, decltype(Deleter1())>;
+  using Func = STDFUNC(TRet, TArg *);
 public:
-  Unique_ptr_Mytype(Mytype *p = nullptr)
-    : BaseUniquePtr{p, Deleter_Mytype()}, ptr{p}
+  Unique_ptr_Mytype(const Func& f, TArg *p = nullptr)
+    : BaseUniquePtr{p, Deleter1(f)}, ptr{p}
   {
   }
 
@@ -26,7 +52,7 @@ public:
     check_allocation();
   }
 
-  Mytype *&get() { /* Override the normal get, to return a reference here!
+  TArg *&get() { /* Override the normal get, to return a reference here!
                       This allows us to take the address of the return-value: &(u_ptr.get()) */
     check_allocation();
     return ptr;
@@ -49,34 +75,34 @@ public:
     }
   }
 
-  Mytype *release()
+  TArg *release()
   {
     check_allocation();
     ptr = nullptr;
     return BaseUniquePtr::release();
   }
 
-  void reset(Mytype *p = nullptr)
+  void reset(TArg *p = nullptr)
   {
     check_allocation();
     BaseUniquePtr::reset(p);
   }
 
-  void swap(unique_ptr& other)
+  void swap(BaseUniquePtr& other)
   {
     check_allocation();
     BaseUniquePtr::swap(other);
   }
 
 
-  typename std::add_lvalue_reference<Mytype>::type operator*() const
+  typename std::add_lvalue_reference<TArg>::type operator*() const
   {
     const_cast<Unique_ptr_Mytype *>(this)->check_allocation();
     return *ptr;
     //return BaseUniquePtr::operator*();
   }
 
-  Mytype* operator->() const
+  TArg* operator->() const
   {
     const_cast<Unique_ptr_Mytype *>(this)->check_allocation();
     return ptr;
@@ -84,6 +110,16 @@ public:
   }
 
 };
+
+
+class MytypeRAII : public Unique_ptr_Mytype<void, Mytype> {
+  using Base = Unique_ptr_Mytype<void, Mytype>;
+public:
+  MytypeRAII(Mytype *p = nullptr) : Base{free_Mytype, p}
+  {}
+};
+
+
 
 int main()
 {
@@ -100,7 +136,7 @@ int main()
   
   {
     // RAII-approach
-    Unique_ptr_Mytype mt2;
+    MytypeRAII mt2;
     alloc_Mytype(&(mt2.get()));
     // ... // std::cout << mt2->i << std::endl;
   }
@@ -109,7 +145,7 @@ int main()
   
   {
     // RAII-approach
-    Unique_ptr_Mytype mt3;
+    MytypeRAII mt3;
     alloc_Mytype(&(mt3.get()));
     // ... // std::cout << mt3->i << std::endl;
     alloc_Mytype(&(mt3.get())); // yes doing this again is safe!
