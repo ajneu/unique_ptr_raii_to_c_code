@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.2)
 project(resources_raii)
 
 set(target go)
-set(src mytype.c go.cpp)
+set(src mytype.c main.cpp)
 
 
 
