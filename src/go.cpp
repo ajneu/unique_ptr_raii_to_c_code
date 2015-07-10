@@ -20,6 +20,57 @@
 
 
 
+template <typename T, typename F_Free>
+class Deleter2 {
+public:
+  Deleter2() {}
+  Deleter2(const F_Free& f) : free_func{f} {}
+  void operator()(T *p) {
+    std::cout << "deleter for Mytype..." << std::endl;
+    free_func(p);
+  }
+private:
+  const F_Free free_func;
+};
+
+/*
+void  free_Mytype(struct Mytype  *p);
+void alloc_Mytype(struct Mytype **p);
+*/
+
+template <typename T, typename F_Alloc, typename F_Free, typename... Params>
+class Raii_Manager : std::unique_ptr<T, decltype(Deleter2<T, F_Free>())> {
+  using Base = std::unique_ptr<T, decltype(Deleter2<T, F_Free>())>;
+public:
+  
+  Raii_Manager(F_Alloc f_alloc, F_Free f2, Params... args) : Base{invoke_alloc(f_alloc, args...), Deleter2<T, F_Free>(f2)}
+  {
+  }
+  ~Raii_Manager()
+  {
+  }
+private:
+  static T* invoke_alloc(F_Alloc f_alloc, Params... args)
+  {
+    T *ptr;
+    f_alloc(&ptr, args...);
+    return ptr;
+  }
+};
+
+class MytypeRAII2 : public Raii_Manager<Mytype, void(*)(Mytype **), void(*)(Mytype *)> {
+  using Base =             Raii_Manager<Mytype, void(*)(Mytype **), void(*)(Mytype *)>;
+public:
+  MytypeRAII2() : Base{alloc_Mytype, free_Mytype}
+  {}
+
+};
+
+
+
+
+
+
 template <typename TRet, typename TArg>
 class Deleter {
   using Func = STDFUNC(TRet, TArg *);
@@ -33,6 +84,9 @@ public:
 private:
   const Func free_func;
 };
+
+
+
 
 template <typename TRet, typename TArg>
 class Unique_ptr_Mytype : protected std::unique_ptr<TArg, decltype(Deleter<TRet, TArg>())> {
@@ -151,5 +205,13 @@ int main()
     alloc_Mytype(&(mt3.get())); // yes doing this again is safe!
   }
 
+  std::cout << '\n' << std::endl;
+    
+  {
+    // RAII2-approach
+    MytypeRAII2 mt4;
+    // ... // std::cout << mt4->i << std::endl;
+
+  }
   return 0;
 }
