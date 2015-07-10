@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "mytype.h"
 
-void alloc_Mytype(struct Mytype **p)
+void alloc_Mytype(struct Mytype **p, double x)
 {
   printf("allocating Mytype\n");
   *p = malloc(sizeof (struct Mytype));

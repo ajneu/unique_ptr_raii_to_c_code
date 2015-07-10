@@ -11,7 +11,7 @@ struct Mytype {
 
 // functions  
 void  free_Mytype(struct Mytype  *p);
-void alloc_Mytype(struct Mytype **p);
+void alloc_Mytype(struct Mytype **p, double x);
 
   
 #ifdef __cplusplus
