@@ -61,7 +61,7 @@ int main()
     // RAII-approach     // traditional RAII
     MytypeRAII mt4(0.0);
     // ... // std::cout << mt4->i << std::endl;
-
+    mt4.reset(3.3);      // custom reset function which frees prev pointer and invokes the allocate function again!
   }
 
   std::cout << '\n' << std::endl;
