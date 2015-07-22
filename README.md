@@ -99,7 +99,7 @@ int main()
 }
 ```
 
-Note: As long as all interaction is via the wrapper-class, the wrapper-class will notice if the exposed pointer is changed (deleting the copy that is held by the base unique_ptr)
+Note: As long as all interaction is via the wrapper-class, the wrapper-class will notice if the exposed ref to pointer is changed (deleting the copy that is held by the base unique_ptr)
 ```
   {
      // delayed-but-tracked RA (Resource Aquisition)
