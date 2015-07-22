@@ -12,8 +12,20 @@ struct AllocFuncStorage {
   AllocFuncStorage (const F_Alloc &f_alloc)
     : alloc_func{f_alloc}
   {}
+
 #ifdef FUNC_COPY
-  const F_Alloc  alloc_func;
+  AllocFuncStorage (AllocFuncStorage &&allo)
+  : alloc_func{std::move(allo.alloc_func)}
+  {}
+
+  AllocFuncStorage &operator=(AllocFuncStorage &&allo) 
+  {
+    alloc_func = std::move(allo.alloc_func);
+  }
+#endif
+    
+#ifdef FUNC_COPY
+  F_Alloc  alloc_func;
 #else
   const F_Alloc &alloc_func;
 #endif
@@ -30,6 +42,22 @@ public:
     : AllocFuncStorage<F_Alloc>{f_alloc}, Base{invoke_alloc(args...), Deleter<T, F_Free>(f2)}
   {
   }
+
+  Uniq_Ptr_Raii_Func_Wrapper(Uniq_Ptr_Raii_Func_Wrapper &&un)
+    : AllocFuncStorage<F_Alloc>{std::move(un)}, Base::unique_ptr{std::move(un)}
+  {
+  }
+
+  Uniq_Ptr_Raii_Func_Wrapper &operator=(Uniq_Ptr_Raii_Func_Wrapper &&un)
+  {
+    // static_cast<AllocFuncStorage<F_Alloc> &>(*this) = std::move(un); // static_cast<AllocFuncStorage<F_Alloc> &&>(un);
+    AllocFuncStorage<F_Alloc>::operator=(std::move(un));
+
+    // static_cast<Base &>(*this) = std::move(un); // static_cast<Base &&>(un);
+    Base::operator=(std::move(un));
+  }
+  
+  
   ~Uniq_Ptr_Raii_Func_Wrapper()
   {
   }

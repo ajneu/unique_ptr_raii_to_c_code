@@ -62,6 +62,10 @@ int main()
     MytypeRAII mt4(0.0);
     // ... // std::cout << mt4->i << std::endl;
     mt4.reset(3.3);      // custom reset function which frees prev pointer and invokes the allocate function again!
+#ifdef FUNC_COPY
+    mt4 = std::move(MytypeRAII(1.1)); // invoke allocate on temporary, then free current contents of m4, then move temporary
+    MytypeRAII mt5{std::move(mt4)};   // no new allocation, just move
+#endif
   }
 
   std::cout << '\n' << std::endl;
