@@ -1,6 +1,6 @@
 # The problem: Inconveniences of C-code interfaces
 
-Some C interfaces look like this:
+Some C interfaces look like this. Note `alloc_Mytype()` and `free_Mytype()`:
 
 ```c
 double arg = 0.0;      // Special arg to control something during allocation in alloc_Mytype() function coming up
@@ -34,7 +34,7 @@ If you know of alternatives, or (particularly) if there is a standard C++ constr
 
 ## Preferred solution: RAII
 
-We use a wrapper-class, that calls `alloc_Mytype()` during construction and `free_Mytype()` during destruction (i.e. when the wrapper-class goes out of scope).
+We use a wrapper-class, that calls `alloc_Mytype()` during construction and `free_Mytype()` during destruction (e.g. when the wrapper-class goes out of scope).
 
 ```cpp
 // use Uniq_Ptr_Raii_Func_Wrapper to create a wrapper-class MytypeRAII that 
@@ -51,10 +51,10 @@ int main()
 {
   // ...
   {
-     double arg = 0.0;  // control something during allocation in the alloc_Mytype function coming up
+     double arg = 0.0;   // control something during allocation in the alloc_Mytype function coming up
   
      // RAII-approach
-     MytypeRAII x2(arg);
+     MytypeRAII x2(arg); // call alloc_Mytype() during the constructor
      
      // use x2, e.g. the allocated pointer can be gotten via x2.get()
      // ...
@@ -69,7 +69,8 @@ int main()
 
 ## Non-preferred method: delayed-but-tracked RA (resource aquisition)
 
-Here we 
+Here we have a wrapper-class that just handles deletion (during destruction, e.g. when the object goes out of scope).
+It exposes a reference to a pointer (via member `get()`) that can be fed into allocation functions. 
 
 ```cpp
 class MytypeRAII_delayed : public Uniq_Ptr_Raii_delayed_Ra_Func_Wrapper<Mytype, decltype(&free_Mytype)> {
@@ -96,4 +97,22 @@ int main()
   }
   // ...
 }
+```
+
+Note: As long as all interaction is via the wrapper-class, the wrapper-class will notice if the exposes pointer is changed (deleting the copy that is held by the base unique_ptr)
+```
+  {
+     // delayed-but-tracked RA (Resource Aquisition)
+     MytypeRAII_delayed mt3;
+     alloc_Mytype(&(mt3.get()), 0.0); 
+     
+     // use mt3
+     // ...
+     
+     alloc_Mytype(&(mt3.get()), 0.1); // Yes doing this again is safe! 
+                                      // The pointer-change will be noticed. The previously allocated pointer is deleted appropriately
+     
+     // mt3 goes out of scope here. automatically calls free_Mytype!
+  }
+  // ...
 ```
